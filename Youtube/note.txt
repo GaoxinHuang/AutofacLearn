@@ -1,0 +1,38 @@
+一.	实际操作
+1.	生成 Interface
+2.	给 Services做 构造器 (DI 做构造器)
+3.	导入包:
+(1).	Autofac
+
+4.	创建 ContainerConfig.cs 
+public class ContainerConfig
+{
+        public static IContainer Configure()
+        {
+            var builder = new ContainerBuilder();
+            //builder.RegisterType<Application>().As<IApplication>();
+            builder.RegisterType<Application>().As<IApplication>();
+            builder.RegisterType<RefactorBusinessLogic>().As<IBusinessLogic>(); //等同于 IBusinessLogic xx = new BusinessLogic()
+
+            builder.RegisterAssemblyTypes(Assembly.Load(nameof(DemoLibrary)))
+                //.Where(t => t.Namespace != null && t.Namespace.Contains("Utilities")) //能用 nameof 就用 nameof
+				.Where(t => t.Namespace != null && t.Namespace.Contains(nameof(DemoLibrary.Utilities)))
+                .As(t => t.GetInterfaces().FirstOrDefault(i => i.Name == "I" + t.Name)); // 找到所有Interface
+
+            return builder.Build();
+        }
+}
+注:	(1). 	能使用nameof, 最好使用 nameof(class). 因为名字一旦改, VS会报错. 但是 string 就不会
+	(2).	
+
+5.	使用DI
+	var container = ContainerConfig.Configure();
+	using (var scope = container.BeginLifetimeScope())
+	{
+		var app = scope.Resolve<IApplication>(); //  
+		app.Run();
+		Console.ReadLine();
+	}
+
+
+关注:1.	scope 
