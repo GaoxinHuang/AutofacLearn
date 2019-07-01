@@ -15,15 +15,31 @@ public class ContainerConfig
             builder.RegisterType<RefactorBusinessLogic>().As<IBusinessLogic>(); //等同于 IBusinessLogic xx = new BusinessLogic()
 
             builder.RegisterAssemblyTypes(Assembly.Load(nameof(DemoLibrary)))
-                //.Where(t => t.Namespace != null && t.Namespace.Contains("Utilities")) //能用 nameof 就用 nameof
+                //.Where(t => t.Namespace != null && t.Namespace.Contains("Utilities")) 
 				.Where(t => t.Namespace != null && t.Namespace.Contains(nameof(DemoLibrary.Utilities)))
-                .As(t => t.GetInterfaces().FirstOrDefault(i => i.Name == "I" + t.Name)); // 找到所有Interface
+                .As(t => t.GetInterfaces().FirstOrDefault(i => i.Name == "I" + t.Name)); // 找到对应的 interface
 
             return builder.Build();
         }
 }
 注:	(1). 	能使用nameof, 最好使用 nameof(class). 因为名字一旦改, VS会报错. 但是 string 就不会
-	(2).	
+	(2).	这个 RegisterType 是不分先后顺序的
+	(3).	注意要用到 auto 的 IContainer (MS 也有自带的)
+	(4).	这里 Application 构造器参数 ->  BusinessLogic 构造器参数 -> Logger 和 DataAccess (到他们这是无参的构造器)
+			所以这里不需要 pass 构造器参数
+
+	(5).	代码解释
+	builder.RegisterAssemblyTypes(Assembly.Load(nameof(DemoLibrary)))
+			.Where(t => t.Namespace != null && t.Namespace.Contains(nameof(DemoLibrary.Utilities)))
+			.As(t => t.GetInterfaces().FirstOrDefault(i => i.Name == "I" + t.Name)); // 找到对应的 interface
+	a.	先找到 DemoLibrary 这个 Assembly
+	b.	where 找到 Utilities 这个 Assembly的全部要 injection的 classes
+	c.	然后 .As 去找到它对应的 interface
+	
+
+自学:	官方推荐 用 builder.Register(c=> new Component()); 代替 builder.RegisterType<Application>() (快10倍)
+	注: 	1.	如果用 new Component() 需要导入参数, 代码如下,
+    builder.Register(c => new RefactorBusinessLogic(c.Resolve<ILogger>(), c.Resolve<IDataAccess>())).As<IBusinessLogic>();
 
 5.	使用DI
 	var container = ContainerConfig.Configure();
